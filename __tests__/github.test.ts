@@ -1,0 +1,324 @@
+import { warning } from '@actions/core';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
+import { createThrottleOptions, OctokitGitHub, WorkflowRun } from '../src/github';
+
+vi.mock('@actions/core', () => ({
+  debug: vi.fn(),
+  warning: vi.fn(),
+}));
+
+const run = (overrides: Partial<WorkflowRun>): WorkflowRun =>
+  ({
+    id: 1,
+    status: 'completed',
+    conclusion: 'success',
+    head_branch: 'master',
+    display_title: 'default-title',
+    name: 'default-name',
+    html_url: 'https://example.com/run',
+    created_at: '2026-05-03T10:00:00Z',
+    run_started_at: '2026-05-03T10:00:00Z',
+    ...overrides,
+  }) as WorkflowRun;
+
+type WorkflowRunPages = WorkflowRun[][];
+const CLIENT_ERROR_STATUSES = Array.from({ length: 100 }, (_, index) => 400 + index);
+const ACTIVE_RUN_STATUSES = ['in_progress', 'queued', 'waiting'];
+
+const clientWithRunPages = (...pagesByCall: WorkflowRunPages[]) => {
+  const client = new OctokitGitHub('fake-token');
+  let paginateCalls = 0;
+  let pagesScanned = 0;
+  const paginate = vi.fn(async (_endpoint, _options, mapFunction) => {
+    const pages = pagesByCall[paginateCalls] || [];
+    paginateCalls += 1;
+    const results: WorkflowRun[] = [];
+    let doneCalled = false;
+    const done = () => {
+      doneCalled = true;
+    };
+
+    for (const page of pages) {
+      pagesScanned += 1;
+      results.push(...mapFunction({ data: page }, done));
+      if (doneCalled) {
+        break;
+      }
+    }
+
+    return results;
+  });
+
+  (client as any).octokit = {
+    actions: {
+      listWorkflowRuns: vi.fn(),
+      listWorkflowRunsForRepo: vi.fn(),
+    },
+    paginate,
+  };
+
+  return { client, paginate, pagesScanned: () => pagesScanned };
+};
+
+const clientWithDynamicRunPages = (
+  pagesForOptions: (options: Record<string, any>) => WorkflowRunPages,
+) => {
+  const client = new OctokitGitHub('fake-token');
+  let pagesScanned = 0;
+  const paginate = vi.fn(async (_endpoint, options, mapFunction) => {
+    const pages = pagesForOptions(options);
+    const results: WorkflowRun[] = [];
+    let doneCalled = false;
+    const done = () => {
+      doneCalled = true;
+    };
+
+    for (const page of pages) {
+      pagesScanned += 1;
+      results.push(...mapFunction({ data: page }, done));
+      if (doneCalled) {
+        break;
+      }
+    }
+
+    return results;
+  });
+
+  (client as any).octokit = {
+    actions: {
+      listWorkflowRuns: vi.fn(),
+      listWorkflowRunsForRepo: vi.fn(),
+    },
+    paginate,
+  };
+
+  return { client, paginate, pagesScanned: () => pagesScanned };
+};
+
+describe('github', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
+  });
+
+  describe('retry', () => {
+    it('does not retry any 4xx responses when retries are enabled', async () => {
+      const fetchMock = vi.spyOn(globalThis, 'fetch');
+
+      for (const status of CLIENT_ERROR_STATUSES) {
+        fetchMock.mockReset();
+        fetchMock.mockImplementation(
+          async () =>
+            new Response(JSON.stringify({ message: 'Request failed with status ' + status }), {
+              status,
+              headers: { 'content-type': 'application/json' },
+            }),
+        );
+
+        const client = new OctokitGitHub('fake-token', 2);
+
+        await expect(client.run('org', 'repo-' + status, status)).rejects.toMatchObject({ status });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+      }
+    });
+  });
+
+  describe('runs', () => {
+    it('does not perform an unfiltered historical walk when only active runs can be eligible', async () => {
+      const completedHistoricalPages = Array.from({ length: 51 }, (_, pageIndex) =>
+        Array.from({ length: 100 }, (_, runIndex) =>
+          run({
+            id: pageIndex * 100 + runIndex + 1,
+            status: 'completed',
+            conclusion: 'success',
+          }),
+        ),
+      );
+      const activeRun = run({
+        id: 5101,
+        status: 'queued',
+        conclusion: null,
+        head_branch: 'master',
+      });
+      const { client, paginate, pagesScanned } = clientWithDynamicRunPages((options) => {
+        if (!options.status) {
+          return completedHistoricalPages;
+        }
+        return options.status === 'queued' ? [[activeRun]] : [];
+      });
+
+      await expect(client.runs('org', 'repo', 123, { branch: 'master' })).resolves.toEqual([
+        activeRun,
+      ]);
+      expect(paginate).toHaveBeenCalledTimes(ACTIVE_RUN_STATUSES.length);
+      expect(paginate.mock.calls.map(([, options]) => options.status)).toEqual(ACTIVE_RUN_STATUSES);
+      expect(paginate.mock.calls.every(([, options]) => options.branch === 'master')).toBe(true);
+      expect(pagesScanned()).toBe(1);
+    });
+
+    it('does not stop pagination after newer active runs outside the queue', async () => {
+      const otherQueuePages = Array.from({ length: 5 }, (_, pageIndex) =>
+        Array.from({ length: 100 }, (_, runIndex) =>
+          run({
+            id: pageIndex * 100 + runIndex + 1,
+            status: 'in_progress',
+            conclusion: null,
+            display_title: 'other-queue',
+            name: 'other-queue',
+          }),
+        ),
+      );
+      const queuedRun = run({
+        id: 501,
+        status: 'in_progress',
+        conclusion: null,
+        display_title: 'deploy-api',
+        name: 'deploy-api',
+      });
+      const { client } = clientWithRunPages([...otherQueuePages, [queuedRun]], [], []);
+
+      await expect(
+        client.runs('org', 'repo', 123, { branch: 'master', queueName: 'deploy-api' }),
+      ).resolves.toEqual([queuedRun]);
+    });
+
+    it('excludes active runs with unknown branches from branch-filtered results', async () => {
+      const unknownBranchRun = run({
+        id: 1,
+        status: 'queued',
+        conclusion: null,
+        head_branch: null,
+      });
+      const masterRun = run({
+        id: 2,
+        status: 'queued',
+        conclusion: null,
+        head_branch: 'master',
+      });
+      const { client } = clientWithRunPages([], [[unknownBranchRun, masterRun]], []);
+
+      await expect(client.runs('org', 'repo', 123, { branch: 'master' })).resolves.toEqual([
+        masterRun,
+      ]);
+    });
+
+    it('queries only active statuses with the branch filter', async () => {
+      const activeRun = run({
+        id: 1,
+        status: 'queued',
+        conclusion: null,
+        head_branch: 'master',
+      });
+      const { client, paginate } = clientWithRunPages([], [[activeRun]], []);
+
+      await expect(client.runs('org', 'repo', 123, { branch: 'master' })).resolves.toEqual([
+        activeRun,
+      ]);
+      expect(paginate.mock.calls.map(([, options]) => options)).toEqual([
+        expect.objectContaining({ branch: 'master', status: 'in_progress' }),
+        expect.objectContaining({ branch: 'master', status: 'queued' }),
+        expect.objectContaining({ branch: 'master', status: 'waiting' }),
+      ]);
+    });
+
+    it('keeps active status queries when no branch filter is provided', async () => {
+      const activeRun = run({
+        id: 1,
+        status: 'queued',
+        conclusion: null,
+        head_branch: 'feature',
+      });
+      const { client, paginate } = clientWithRunPages([], [[activeRun]], []);
+
+      await expect(client.runs('org', 'repo', 123)).resolves.toEqual([activeRun]);
+      const statusOptions = paginate.mock.calls.map(([, options]) => options);
+      expect(statusOptions.map((options) => options.status)).toEqual([
+        'in_progress',
+        'queued',
+        'waiting',
+      ]);
+      for (const options of statusOptions) {
+        expect(options).not.toHaveProperty('branch');
+      }
+    });
+
+    it('does not cap discovered active runs before predecessor filtering', async () => {
+      const newerActivePages = Array.from({ length: 5 }, (_, pageIndex) =>
+        Array.from({ length: 100 }, (_, runIndex) =>
+          run({
+            id: pageIndex * 100 + runIndex + 1,
+            status: 'queued',
+            conclusion: null,
+          }),
+        ),
+      );
+      const olderActiveRun = run({
+        id: 501,
+        status: 'queued',
+        conclusion: null,
+      });
+      const { client } = clientWithRunPages([...newerActivePages, [olderActiveRun]], [], []);
+
+      const runs = await client.runs('org', 'repo', 123);
+
+      expect(runs).toHaveLength(501);
+      expect(runs).toContain(olderActiveRun);
+    });
+
+    it('stops active status pagination at the page cap', async () => {
+      const nonMatchingQueuePages = Array.from({ length: 51 }, (_, pageIndex) =>
+        Array.from({ length: 100 }, (_, runIndex) =>
+          run({
+            id: pageIndex * 100 + runIndex + 1,
+            status: 'in_progress',
+            conclusion: null,
+            display_title: 'other-queue',
+            name: 'other-queue',
+          }),
+        ),
+      );
+      const { client, pagesScanned } = clientWithRunPages(nonMatchingQueuePages, [], []);
+
+      await expect(client.runs('org', 'repo', 123, { queueName: 'deploy-api' })).resolves.toEqual(
+        [],
+      );
+      expect(pagesScanned()).toBe(50);
+    });
+
+    it('uses the repo-level active runs endpoint for cross-workflow queue discovery', async () => {
+      const activeRun = run({
+        id: 1,
+        status: 'queued',
+        conclusion: null,
+        display_title: 'deploy-api',
+        name: 'deploy-api',
+      });
+      const { client, paginate } = clientWithRunPages([], [[activeRun]], []);
+
+      await expect(
+        client.activeRunsForRepo('org', 'repo', { queueName: 'deploy-api' }),
+      ).resolves.toEqual([activeRun]);
+      expect(paginate).toHaveBeenCalledTimes(ACTIVE_RUN_STATUSES.length);
+      expect(paginate.mock.calls.every(([, options]) => !('workflow_id' in options))).toBe(true);
+      expect(paginate.mock.calls.map(([, options]) => options.status)).toEqual(ACTIVE_RUN_STATUSES);
+    });
+  });
+
+  describe('rate-limit logging', () => {
+    it('logs primary and secondary rate-limit messages as visible warnings', () => {
+      const throttleOptions = createThrottleOptions();
+
+      expect(throttleOptions.onRateLimit(30, { method: 'GET', url: '/rate-limited' }, {}, 0)).toBe(
+        true,
+      );
+      throttleOptions.onSecondaryRateLimit(60, { method: 'GET', url: '/secondary-limited' });
+
+      expect(warning).toHaveBeenCalledWith('Request quota exhausted for request GET /rate-limited');
+      expect(warning).toHaveBeenCalledWith('Retrying after 30 seconds!');
+      expect(warning).toHaveBeenCalledWith(
+        'Secondary rate limit detected for request GET /secondary-limited',
+      );
+    });
+  });
+});
