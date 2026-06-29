@@ -16,42 +16,32 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/softprops/turnstyle.git"
+    "url": "git+https://github.com/step-security/softprops-turnstyle.git"
   },
   "keywords": [
     "actions",
     "github"
   ],
-  "author": "softprops",
+  "author": "step-security",
   "license": "MIT",
   "dependencies": {
     "@actions/core": "^3.0.1",
     "@octokit/plugin-retry": "^8.1.0",
     "@octokit/plugin-throttling": "^11.0.3",
-    "@octokit/rest": "^22.0.1"
+    "@octokit/rest": "^22.0.1",
+    "axios": "^1.18.0"
   },
   "devDependencies": {
     "@types/node": "^24.12.4",
     "@vitest/coverage-v8": "^4.1.7",
     "esbuild": "^0.28.0",
-    "husky": "^9.1.7",
-    "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
     "typescript": "^6.0.3",
     "vitest": "^4.0.6"
-  },
-  "overrides": {
-    "undici": "6.25.0",
-    "yaml": "2.8.4"
   },
   "lint-staged": {
     "{__tests__,src}/**/*.ts": [
       "npm run fmt"
     ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "lint-staged"
-    }
   }
 }

@@ -6,12 +6,12 @@ on:
     paths-ignore:
       - "*.md"
     branches:
-      - master
+      - main
   pull_request:
     paths-ignore:
       - "*.md"
     branches:
-      - master
+      - main
 
 permissions:
   actions: read
@@ -21,9 +21,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: ".tool-versions"
           cache: "npm"
@@ -43,9 +43,9 @@ jobs:
     if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      - uses: actions/setup-node@v6
         with:
           node-version-file: ".tool-versions"
           cache: "npm"

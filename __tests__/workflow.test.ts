@@ -12,9 +12,9 @@ describe('workflow', () => {
       ];
       const input = parseInput({
         GITHUB_REF: 'refs/heads/main',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/turnstyle',
         GITHUB_WORKFLOW: 'CI',
-        GITHUB_WORKFLOW_REF: 'softprops/turnstyle/.github/workflows/second.yml@refs/heads/main',
+        GITHUB_WORKFLOW_REF: 'step-security/turnstyle/.github/workflows/second.yml@refs/heads/main',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',
       });
@@ -26,7 +26,7 @@ describe('workflow', () => {
       const workflows = [{ id: 1, name: 'CI', path: '.github/workflows/main.yml' }];
       const input = parseInput({
         GITHUB_REF: 'refs/heads/main',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/turnstyle',
         GITHUB_WORKFLOW: 'CI',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',

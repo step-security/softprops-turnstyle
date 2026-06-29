@@ -28,9 +28,7 @@ This can be problematic for workflows used as part of a continuous deployment pr
 
 The typical setup for turnstyle involves adding job step using `step-security/softprops-turnstyle@v3`.
 
-The examples below use the moving `v3` major-version tag. If you need a
-change that has merged to `master` but has not been released yet, pin the
-merged commit SHA until the next `v3` release is published.
+The examples below use the moving `v3` major-version tag.
 
 ```diff
 name: Main
@@ -42,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 +     - name: Turnstyle
 +       uses: step-security/softprops-turnstyle@v3
       - name: Deploy
@@ -66,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         uses: step-security/softprops-turnstyle@v3
       - name: Deploy
@@ -85,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         uses: step-security/softprops-turnstyle@v3
         with:
@@ -106,7 +104,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         uses: step-security/softprops-turnstyle@v3
         with:
@@ -128,7 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         uses: step-security/softprops-turnstyle@v3
         with:
@@ -153,7 +151,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         id: turnstyle
         uses: step-security/softprops-turnstyle@v3
@@ -177,7 +175,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         uses: step-security/softprops-turnstyle@v3
         with:
@@ -199,13 +197,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
       - name: Turnstyle
         id: turnstyle
         uses: step-security/softprops-turnstyle@v3
       - name: Download previous artifact
         if: steps.turnstyle.outputs.previous_run_id != ''
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: build
           github-token: ${{ github.token }}
@@ -301,4 +299,3 @@ action, the permissions required are:
 
 At this time there is no way to coordinate between workflow runs beyond waiting. For those using private repositories, [you are charged based on the time your workflow spends running](https://github.com/features/actions#pricing-details). Waiting within one workflow run for another to complete will incur the cost of the time spent waiting.
 
-Doug Tangren (softprops) 2020

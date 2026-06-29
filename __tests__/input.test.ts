@@ -8,7 +8,7 @@ describe('input', () => {
       assert.deepEqual(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -21,7 +21,7 @@ describe('input', () => {
         }),
         {
           githubToken: 's3cr3t',
-          owner: 'softprops',
+          owner: 'step-security',
           repo: 'turnstyle',
           branch: 'foo',
           workflowName: 'test',
@@ -45,7 +45,7 @@ describe('input', () => {
       assert.deepEqual(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -56,7 +56,7 @@ describe('input', () => {
         }),
         {
           githubToken: 's3cr3t',
-          owner: 'softprops',
+          owner: 'step-security',
           repo: 'turnstyle',
           branch: 'foo',
           workflowName: 'test',
@@ -80,7 +80,7 @@ describe('input', () => {
       assert.throws(() =>
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -94,7 +94,7 @@ describe('input', () => {
     it('parses zero second timeout inputs', () => {
       const baseEnv = {
         GITHUB_REF: 'refs/heads/foo',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/turnstyle',
         GITHUB_WORKFLOW: 'test',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',
@@ -119,7 +119,7 @@ describe('input', () => {
     it('rejects invalid seconds inputs', () => {
       const baseEnv = {
         GITHUB_REF: 'refs/heads/foo',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/turnstyle',
         GITHUB_WORKFLOW: 'test',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',
@@ -151,7 +151,7 @@ describe('input', () => {
       assert.throws(() =>
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -164,7 +164,7 @@ describe('input', () => {
       assert.deepEqual(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -177,7 +177,7 @@ describe('input', () => {
         }),
         {
           githubToken: 's3cr3t',
-          owner: 'softprops',
+          owner: 'step-security',
           repo: 'turnstyle',
           branch: 'foo',
           workflowName: 'test',
@@ -202,14 +202,14 @@ describe('input', () => {
         parseInput({
           GITHUB_HEAD_REF: 'pr-branch-name',
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
         }),
         {
           githubToken: 's3cr3t',
-          owner: 'softprops',
+          owner: 'step-security',
           repo: 'turnstyle',
           branch: 'pr-branch-name',
           workflowName: 'test',
@@ -235,7 +235,7 @@ describe('input', () => {
           GITHUB_HEAD_REF: 'pr-branch-name',
           GITHUB_REF: 'refs/heads/foo',
           GITHUB_REF_NAME: 'release/branch-name',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -250,7 +250,7 @@ describe('input', () => {
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
           GITHUB_REF_NAME: 'release/branch-name',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -265,7 +265,7 @@ describe('input', () => {
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
           GITHUB_REF_NAME: 'release/branch-name',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -278,7 +278,7 @@ describe('input', () => {
       assert.equal(
         parseInput({
           GITHUB_REF: 'refs/tags/v3.2.3',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -291,9 +291,9 @@ describe('input', () => {
       assert.equal(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
-          GITHUB_WORKFLOW_REF: 'softprops/turnstyle/.github/workflows/main.yml@refs/heads/foo',
+          GITHUB_WORKFLOW_REF: 'step-security/turnstyle/.github/workflows/main.yml@refs/heads/foo',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
         }).workflowPath,
@@ -305,7 +305,7 @@ describe('input', () => {
       assert.deepEqual(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
@@ -319,7 +319,7 @@ describe('input', () => {
         }),
         {
           githubToken: 's3cr3t',
-          owner: 'softprops',
+          owner: 'step-security',
           repo: 'turnstyle',
           branch: 'foo',
           workflowName: 'test',
@@ -343,7 +343,7 @@ describe('input', () => {
       assert.equal(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           GITHUB_RUN_ATTEMPT: '3',
@@ -357,7 +357,7 @@ describe('input', () => {
       assert.equal(
         parseInput({
           GITHUB_REF: 'refs/heads/foo',
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/turnstyle',
           GITHUB_WORKFLOW: 'test',
           GITHUB_RUN_ID: '1',
           INPUT_TOKEN: 's3cr3t',
