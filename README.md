@@ -1,1 +1,300 @@
-# softprops-turnstyle
+[![StepSecurity Maintained Action](https://raw.githubusercontent.com/step-security/maintained-actions-assets/main/assets/maintained-action-banner.png)](https://docs.stepsecurity.io/actions/stepsecurity-maintained-actions)
+
+<h1 align="center">
+  <br/>
+  turnstyle
+</h1>
+
+<p align="center">
+   A GitHub Action for serializing workflow runs
+</p>
+
+<div align="center">
+  <a href="https://github.com/step-security/softprops-turnstyle/actions">
+		<img src="https://github.com/step-security/softprops-turnstyle/workflows/main/badge.svg"/>
+	</a>
+</div>
+
+<br />
+
+## 🤔 why bother
+
+GitHub Actions is an event-oriented system. Your workflows run in response to events and are triggered independently and without coordination. In a shared repository, if two or more people merge pull requests, each will trigger workflows without regard to one another.
+
+This can be problematic for workflows used as part of a continuous deployment process. You might want to let an in-flight deployment complete before progressing further with the next workflow. This is the usecase turnstyle action targets.
+
+## 🤸 Usage
+
+The typical setup for turnstyle involves adding job step using `step-security/softprops-turnstyle@v3`.
+
+The examples below use the moving `v3` major-version tag.
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
++     - name: Turnstyle
++       uses: step-security/softprops-turnstyle@v3
+      - name: Deploy
+        run: sleep 30
+```
+
+### Timing out
+
+To avoid waiting prolonged periods of time, you may wish to bail on a run or continuing a workflow run regardless of the status of the previous run.
+
+You can bail from a run using the built-in GitHub Actions [`jobs.<job_id>.timeout-minutes`](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/workflow-syntax-for-github-actions#jobsjob_idtimeout-minutes) setting
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
++   timeout-minutes: 5
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+      - name: Deploy
+        run: sleep 30
+```
+
+You can also limit how long you're willing to wait before moving on with `jobs.<job_id>.steps.with.continue-after-seconds`
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
++         continue-after-seconds: 180
+      - name: Deploy
+        run: sleep 30
+```
+
+or before aborting the step with `jobs.<job_id>.steps.with.abort-after-seconds`
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
++         abort-after-seconds: 180
+      - name: Deploy
+        run: sleep 30
+```
+
+you can also wait on a specific job (and step) to complete in a run by using the `jobs.<job_id>.steps.with.job-to-wait-for`
+and `jobs.<job_id>.steps.with.step-to-wait-for` inputs. Specify the name of the job/step to wait for.
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
++         job-to-wait-for: "main"
++         step-to-wait-for: "Deploy"
+      - name: Deploy
+        run: sleep 30
+```
+
+
+Finally, you can use the `force_continued` output to skip only a subset of steps
+by setting `continue-after-seconds` and conditioning future steps with
+`if: ! steps.<step id>.outputs.force_continued`
+
+```diff
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        id: turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
++         continue-after-seconds: 180
+      - name: Deploy
++       if: ! steps.turnstyle.outputs.force_continued
+        run: sleep 30
+```
+
+By default, Turnstyle waits on runs from the current branch. To wait on another
+branch, set `branch`.
+
+```yaml
+name: Main
+
+on: pull_request
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
+          branch: master
+      - name: Deploy
+        run: sleep 30
+```
+
+You can use `previous_run_id` to download artifacts from the run Turnstyle
+waited on.
+
+```yaml
+name: Main
+
+on: push
+
+jobs:
+  main:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Turnstyle
+        id: turnstyle
+        uses: step-security/softprops-turnstyle@v3
+      - name: Download previous artifact
+        if: steps.turnstyle.outputs.previous_run_id != ''
+        uses: actions/download-artifact@v8
+        with:
+          name: build
+          github-token: ${{ github.token }}
+          run-id: ${{ steps.turnstyle.outputs.previous_run_id }}
+```
+
+### Reusable workflows
+
+Turnstyle can run from a called reusable workflow. If the same caller workflow
+invokes the reusable workflow repeatedly, the default queue is scoped to that
+caller workflow.
+
+If several caller workflows should share one queue through the same reusable
+workflow, set `queue-name` to a stable value and include that value in each
+caller workflow's run name or workflow name. Turnstyle uses that queue name to
+find matching active runs across workflows.
+
+Caller workflow:
+
+```yaml
+name: Deploy API
+run-name: deploy-queue ${{ github.ref_name }} ${{ github.run_number }}
+
+on: push
+
+jobs:
+  deploy:
+    uses: ./.github/workflows/reusable-deploy.yml
+```
+
+Called reusable workflow:
+
+```yaml
+name: Reusable deploy
+
+on:
+  workflow_call:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Turnstyle
+        uses: step-security/softprops-turnstyle@v3
+        with:
+          queue-name: deploy-queue
+      - name: Deploy
+        run: sleep 30
+```
+
+#### inputs
+
+| Name                     | Type    | Description                                                                                                                                 |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `token`                  | string  | GitHub access token used for Actions API reads (defaults to `github.token`)                                                                 |
+| `continue-after-seconds` | number  | Maximum number of seconds to wait before moving forward (unbound by default). Mutually exclusive with abort-after-seconds                   |
+| `abort-after-seconds`    | number  | Maximum number of seconds to wait before aborting the job (unbound by default). Mutually exclusive with continue-after-seconds              |
+| `poll-interval-seconds`  | number  | Number of seconds to wait in between checks for previous run completion (defaults to 60)                                                    |
+| `same-branch-only`       | boolean | Only wait on other runs from the same branch (defaults to true)                                                                             |
+| `branch`                 | string  | Branch name to use for same-branch filtering (defaults to the current branch)                                                               |
+| `initial-wait-seconds`   | number  | Total elapsed seconds within which period the action will refresh the list of current runs, if no runs were found in the first attempt      |
+| `job-to-wait-for`        | string  | Name of the workflow's job to wait for (unbound by default).                                                                                |
+| `step-to-wait-for`       | string  | Name of the step to wait for (unbound by default). Requires job-to-wait-for to be set.                                                      |
+| `queue-name`             | string  | Custom substring used to group matching runs across workflows (defaults to the current workflow only).                                      |
+| `retries`                | number  | Number of times to retry GitHub API requests that fail with a transient 5xx error, using exponential backoff (defaults to 0, ie no retries) |
+
+#### outputs
+
+| Name               | Type    | Description                                                                                     |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------- |
+| `force_continued`  | boolean | True if continue-after-seconds is used and the step using turnstyle continued. False otherwise. |
+| `previous_run_id`  | string  | The ID of the previous workflow run that Turnstyle waited on, if one was found.                 |
+| `previous_run_url` | string  | The URL of the previous workflow run that Turnstyle waited on, if one was found.                |
+
+## required permissions
+
+Because this application leverages the `GITHUB_TOKEN` to make API requests, the
+permissions granted to the token must be sufficient to make the API requests.
+By default, the token has wide enough permissions to allow all API requests
+made by this action. If you are customizing your token permissions, you must
+explicitly specify all permissions, including those that you need that would
+otherwise be granted by the defaults. See ["Permissions for the
+GITHUB_TOKEN"](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token)
+In the GitHub Actions documentation.
+
+If you need to specify explicit permissions for the API requests made by this
+action, the permissions required are:
+
+- `actions:read` - this permission is required for the workflow, run, job, and
+  step read requests made by this action.
+
+## cost of coordination
+
+At this time there is no way to coordinate between workflow runs beyond waiting. For those using private repositories, [you are charged based on the time your workflow spends running](https://github.com/features/actions#pricing-details). Waiting within one workflow run for another to complete will incur the cost of the time spent waiting.
+

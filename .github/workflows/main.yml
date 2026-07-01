@@ -1,0 +1,58 @@
+name: main
+
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - "*.md"
+    branches:
+      - main
+  pull_request:
+    paths-ignore:
+      - "*.md"
+    branches:
+      - main
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+      - name: Check bundled action
+        run: git diff --exit-code -- dist/index.js
+      - name: Test
+        run: npm run test
+      - name: Format
+        run: npm run fmtcheck
+
+  integration:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: ".tool-versions"
+          cache: "npm"
+
+      - name: Turnstyle
+        uses: ./ # Uses an action in the root directory
+        with:
+          poll-interval-seconds: 10
+
+      - name: Deploy
+        run: sleep 180
