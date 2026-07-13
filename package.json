@@ -35,7 +35,7 @@
     "@types/node": "^24.12.4",
     "@vitest/coverage-v8": "^4.1.7",
     "esbuild": "^0.28.0",
-    "prettier": "^3.8.3",
+    "prettier": "^3.9.5",
     "typescript": "^6.0.3",
     "vitest": "^4.0.6"
   },
