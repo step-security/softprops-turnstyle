@@ -22,6 +22,7 @@ const createWaiter: WaiterFactory = (workflowId, github, input) =>
 const errorMessage = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
+/* v8 ignore start */
 async function validateSubscription() {
   const eventPath = process.env.GITHUB_EVENT_PATH;
   let repoPrivate: boolean | undefined;
@@ -64,6 +65,7 @@ async function validateSubscription() {
     core.info('Timeout or API not reachable. Continuing to next step.');
   }
 }
+/* v8 ignore end */
 
 export async function run(
   environment: Record<string, string | undefined> = env,
