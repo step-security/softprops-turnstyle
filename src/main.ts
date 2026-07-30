@@ -1,12 +1,26 @@
 import { debug, info, setFailed } from '@actions/core';
 import { env } from 'process';
 import { OctokitGitHub } from './github';
-import { parseInput } from './input';
-import { Waiter } from './wait';
-import { findWorkflowId } from './workflow';
+import { parseInput, type Input } from './input';
+import { Waiter, type Wait, type WaiterGitHubClient } from './wait';
+import { findWorkflowId, type Workflow } from './workflow';
 import fs from 'fs';
 import * as core from '@actions/core';
 import axios, { isAxiosError } from 'axios';
+
+export interface ActionGitHubClient extends WaiterGitHubClient {
+  workflows(owner: string, repo: string): Promise<Workflow[]>;
+}
+
+export type GitHubClientFactory = (githubToken: string, retries: number) => ActionGitHubClient;
+export type WaiterFactory = (workflowId: number, github: WaiterGitHubClient, input: Input) => Wait;
+
+const createGitHubClient: GitHubClientFactory = (githubToken, retries) =>
+  new OctokitGitHub(githubToken, retries);
+const createWaiter: WaiterFactory = (workflowId, github, input) =>
+  new Waiter(workflowId, github, input, info, debug);
+const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 async function validateSubscription() {
   const eventPath = process.env.GITHUB_EVENT_PATH;
@@ -51,29 +65,33 @@ async function validateSubscription() {
   }
 }
 
-async function run() {
+export async function run(
+  environment: Record<string, string | undefined> = env,
+  githubFactory: GitHubClientFactory = createGitHubClient,
+  waiterFactory: WaiterFactory = createWaiter,
+) {
   try {
     await validateSubscription();
-    const input = parseInput(env);
+    const input = parseInput(environment);
     debug(
       `Parsed inputs (w/o token): ${(({ githubToken, ...inputs }) => JSON.stringify(inputs))(
         input,
       )}`,
     );
-    const github = new OctokitGitHub(input.githubToken, input.retries);
+    const github = githubFactory(input.githubToken, input.retries);
     debug(`Fetching workflows for ${input.owner}/${input.repo}...`);
     const workflows = await github.workflows(input.owner, input.repo);
     debug(`Found ${workflows.length} workflows in ${input.owner}/${input.repo}`);
-    const workflow_id = findWorkflowId(workflows, input);
-    if (workflow_id) {
-      await new Waiter(workflow_id, github, input, info, debug, workflows).wait();
+    const workflowId = findWorkflowId(workflows, input);
+    if (workflowId !== undefined) {
+      await waiterFactory(workflowId, github, input).wait();
     } else {
       setFailed(
         `No workflow found matching workflow path or name: ${input.workflowPath || input.workflowName}`,
       );
     }
-  } catch (error: any) {
-    setFailed(error.message);
+  } catch (error: unknown) {
+    setFailed(errorMessage(error));
   }
 }
 

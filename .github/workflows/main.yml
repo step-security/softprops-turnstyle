@@ -35,6 +35,8 @@ jobs:
 
       - name: Install
         run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
       - name: Build
         run: npm run build
       - name: Check bundled action
@@ -45,6 +47,7 @@ jobs:
         run: npm run fmtcheck
 
   integration:
+    if: github.event_name == 'push'
     runs-on: ubuntu-24.04
     steps:
       - name: Harden the runner (Audit all outbound calls)
