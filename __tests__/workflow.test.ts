@@ -42,9 +42,9 @@ describe('workflow', () => {
       ];
       const input = parseInput({
         GITHUB_REF: 'refs/heads/main',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
         GITHUB_WORKFLOW: 'CI',
-        GITHUB_WORKFLOW_REF: 'softprops/turnstyle/.github/workflows/missing.yml@refs/heads/main',
+        GITHUB_WORKFLOW_REF: 'step-security/softprops-turnstyle/.github/workflows/missing.yml@refs/heads/main',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',
       });
@@ -66,7 +66,7 @@ describe('workflow', () => {
     ])('returns undefined for %s', (_description, workflows) => {
       const input = parseInput({
         GITHUB_REF: 'refs/heads/main',
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
         GITHUB_WORKFLOW: 'CI',
         GITHUB_RUN_ID: '1',
         INPUT_TOKEN: 's3cr3t',

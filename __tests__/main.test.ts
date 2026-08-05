@@ -18,7 +18,7 @@ const environment = (
   overrides: Record<string, string | undefined> = {},
 ): Record<string, string | undefined> => ({
   GITHUB_REF: 'refs/heads/master',
-  GITHUB_REPOSITORY: 'softprops/turnstyle',
+  GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
   GITHUB_WORKFLOW: 'CI',
   GITHUB_RUN_ID: '42',
   INPUT_TOKEN: 'secret',
@@ -53,13 +53,13 @@ describe('main', () => {
     await run(environment(), githubFactory, waiterFactory);
 
     expect(githubFactory).toHaveBeenCalledWith('secret', 2);
-    expect(workflows).toHaveBeenCalledWith('softprops', 'turnstyle');
+    expect(workflows).toHaveBeenCalledWith('step-security', 'softprops-turnstyle');
     expect(waiterFactory).toHaveBeenCalledWith(
       123,
       github,
       expect.objectContaining({
-        owner: 'softprops',
-        repo: 'turnstyle',
+        owner: 'step-security',
+        repo: 'softprops-turnstyle',
         workflowName: 'CI',
         runId: 42,
         retries: 2,
@@ -67,7 +67,7 @@ describe('main', () => {
     );
     expect(wait).toHaveBeenCalledOnce();
     expect(setFailed).not.toHaveBeenCalled();
-    expect(debug).toHaveBeenCalledWith('Found 1 workflows in softprops/turnstyle');
+    expect(debug).toHaveBeenCalledWith('Found 1 workflows in step-security/softprops-turnstyle');
   });
 
   it('reports a missing workflow without starting a waiter', async () => {

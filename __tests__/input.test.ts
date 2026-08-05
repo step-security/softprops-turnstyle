@@ -358,7 +358,7 @@ describe('input', () => {
       (runAttempt) => {
         assert.equal(
           parseInput({
-            GITHUB_REPOSITORY: 'softprops/turnstyle',
+            GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
             GITHUB_RUN_ATTEMPT: runAttempt,
           }).runAttempt,
           1,
@@ -368,7 +368,7 @@ describe('input', () => {
 
     it('trims numeric and branch inputs', () => {
       const input = parseInput({
-        GITHUB_REPOSITORY: 'softprops/turnstyle',
+        GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
         GITHUB_RUN_ATTEMPT: ' 3 ',
         INPUT_BRANCH: ' feature/branch ',
         INPUT_RETRIES: ' 4 ',
@@ -387,7 +387,7 @@ describe('input', () => {
       assert.throws(
         () =>
           parseInput({
-            GITHUB_REPOSITORY: 'softprops/turnstyle',
+            GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
             INPUT_RETRIES: unsafeInteger,
           }),
         /retries/,
@@ -399,18 +399,18 @@ describe('input', () => {
       ['no repository', '.github/workflows/main.yml@refs/heads/main', undefined],
       [
         'no ref separator',
-        'softprops/turnstyle/.github/workflows/main.yml',
+        'step-security/softprops-turnstyle/.github/workflows/main.yml',
         '.github/workflows/main.yml',
       ],
       [
         'a branch containing slashes',
-        'softprops/turnstyle/.github/workflows/main.yml@refs/heads/feature/branch',
+        'step-security/softprops-turnstyle/.github/workflows/main.yml@refs/heads/feature/branch',
         '.github/workflows/main.yml',
       ],
     ])('handles workflow references from %s', (_description, workflowRef, expected) => {
       assert.equal(
         parseInput({
-          GITHUB_REPOSITORY: 'softprops/turnstyle',
+          GITHUB_REPOSITORY: 'step-security/softprops-turnstyle',
           GITHUB_WORKFLOW_REF: workflowRef,
         }).workflowPath,
         expected,
