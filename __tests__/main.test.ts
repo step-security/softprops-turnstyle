@@ -79,9 +79,7 @@ describe('main', () => {
     );
     expect(wait).toHaveBeenCalledOnce();
     expect(setFailed).not.toHaveBeenCalled();
-    expect(debug).toHaveBeenCalledWith(
-      'Found 1 workflows in step-security/softprops-turnstyle',
-    );
+    expect(debug).toHaveBeenCalledWith('Found 1 workflows in step-security/softprops-turnstyle');
   });
 
   it('uses the default waiter factory', async () => {
